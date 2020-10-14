@@ -1,2 +1,2 @@
-# Perceptron-in-C
-Here's a Perceptron implemented in C, you can see how to train your Perceptron to solve a problem
+# Recommended book
+Introduction to the theory of neural computation - Krogh Anders, Hertz John, Palmer Richard
