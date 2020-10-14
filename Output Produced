@@ -1,0 +1,30 @@
+#include<stdio.h>
+#include<math.h>
+#include<stdlib.h>
+#include<malloc.h>
+int main(){
+	int col,i;
+	float *wvec,*myXvec,sol=0;
+	FILE * WEIGHTFILE;
+	WEIGHTFILE=fopen("FilePesi.txt","r");
+	fscanf(WEIGHTFILE,"%d",&col);
+	myXvec=(float*)malloc(col*sizeof(float));
+	wvec=(float*)malloc(col*sizeof(float));
+	for (i=0;i<col;i++){
+		fscanf(WEIGHTFILE,"%f",&wvec[i]);
+	}
+	printf("Inserisci il tuo input: ");
+	for(i=0;i<col;i++){
+		if(i<col-1){
+			scanf("%f",&myXvec[i]);
+			sol+=myXvec[i]*wvec[i];
+		}
+		else{
+			myXvec[i]=1;
+			sol+=wvec[i];
+		}
+	}
+	sol=tanh(sol);
+	printf("La soluzione e': %f",sol);
+	fclose(WEIGHTFILE);
+}
