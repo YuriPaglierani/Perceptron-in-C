@@ -1,0 +1,157 @@
+#include<stdio.h>
+#include<math.h>
+#include<stdlib.h>
+#include<malloc.h>
+#define EPS 0.001
+#define ERR 0.0001
+int r,c;
+int rand(void);
+void CONTROLEX(float *vec){								/*control the allocation*/
+	if (vec==NULL){
+		perror("Errore durante l'allocazione");
+		exit(1);
+	}
+}
+void NEXANDIN(int *m,int *n){
+	int count=0,col,row;
+	while(1){
+		printf("Quanti input ha la rete neurale?\n");
+		scanf("%d", &row);
+		printf("Quanti elementi ha ogni input?\n");
+		scanf("%d", &col);
+		*m=row;
+		*n=col+1;										/*col+1 is for threshold of neurons*/
+		if(*m>=1 && *n>1){
+			break;
+		}
+		count++;
+		if (count>10){
+			perror("Errore, hai fatto troppi tentativi");
+			break;
+		}
+		printf("I valori inseriti non sono corretti provare con altri\n");
+	}
+}
+void INPUT(float **matrix,int *m,int *n){
+	int i,j;
+	FILE * XFILE;
+	XFILE=fopen("xvec.txt","r");
+	for (i=0;i<*m;i++){	
+		for(j=0;j<*n;j++){
+			if (j!=*n-1){
+				fscanf(XFILE,"%f",&matrix[i][j]);
+			}
+			else{
+				matrix[i][j]=1;
+			}
+		}
+	}
+	fclose(XFILE);
+}
+void INPUTEPS(float *eps,int *row){												
+	int i;
+	FILE * EPSFILE;
+	EPSFILE=fopen("epssol.txt","r");
+	for (i=0;i<*row;i++){
+		fscanf(EPSFILE,"%f",&eps[i]);
+	}
+	fclose(EPSFILE);
+}
+float SCALPROD(float **xmat, float *wvec, int *col, int ind){					/*Scalar product between xmat and wvec*/
+	int i;
+	float scalprodf=0;
+	for (i=0;i<*col;i++){
+		scalprodf+=xmat[ind][i]*wvec[i];
+	}
+	return scalprodf;
+}
+float ERRORF(float *Sol,float *yvec,int *row){									/*Quadratic cost func*/
+	float err=0;
+	int i;
+	for (i=0;i<*row;i++){
+		err+=pow(Sol[i]-yvec[i],2);
+	}
+	err=err/2;
+	return err;
+}
+void HEBB(float **xmat,float *Wi, float *Sol,float *yvec,int *col,int ind){		/*Hebb's rule*/
+	int i;
+	for (i=0;i<*col;i++){
+		Wi[i]=Wi[i]+EPS*(Sol[ind]-yvec[ind])*(1-pow(yvec[ind],2))*xmat[ind][i];
+	}
+}
+
+void PERCEPTRON(float **mat,float *Sol,int *row,int *col){
+	float *weight,*yvec,Er;
+	int ind,i,j,count=0;
+	FILE * errorfile;												/*Apertura del file della funzione d'errore e del vettore dei pesi*/
+	FILE * WEIGHTFILE;
+	WEIGHTFILE=fopen("FilePesi.txt","w");
+	errorfile=fopen("Errori.dat","w");
+	if (errorfile==NULL || WEIGHTFILE==NULL){
+		perror("Errore di apertura del file");
+		exit(1);
+	}
+	weight=(float*)malloc(sizeof(float)*(*col));					/*weight vector of Perceptron*/
+	yvec=(float*)malloc(sizeof(float)*(*row));						/*Vector used for the outputs produced by the NN*/
+	CONTROLEX(weight);
+	CONTROLEX(yvec);
+	for(i=0;i<*col;i++){											/*Inizialization of weight*/
+		weight[i]=0;
+	}
+	while(1){
+		count++;
+		for (j=0;j<*row;j++){
+			yvec[j]=tanh(SCALPROD(mat,weight,col,j));				/*Output of the NN*/
+		}
+		ind=(rand()%(*row));										/*Random index to avoid gutter problem*/
+		Er=ERRORF(Sol,yvec,row);									/*Cost function (to show the learning process)*/
+		if(count%100==1){
+			fprintf(errorfile,"%d %f\n",count,Er);
+		}
+		HEBB(mat,weight,Sol,yvec,col,ind);							/*Hebb's rule for learning*/
+		if (Er<ERR || count==10000000){								/*Stop*/
+			if (count==10000000){
+				perror("You didn't reached the Epsilon desired");
+				printf("Your error is %f, while minimum error accepted is %f",Er,ERR);
+			}
+			else{
+				printf("You reached your epsilon");
+			}
+			break;
+		}
+	}
+	fprintf(WEIGHTFILE,"%d\n",*col);								/*Segno il numero di colonne sul file del vettore dei pesi*/
+	for(i=0;i<*col;i++){
+		fprintf(WEIGHTFILE,"%f\n",weight[i]);
+	}
+	fclose(errorfile);												/*Chiudo i files e dealloco i vettori*/
+	free(weight);
+	free(yvec);
+	fclose(WEIGHTFILE);
+}
+
+int main(){
+	float **matrix,*sol,SCALPROD(float**,float*,int*,int),ERRORF(float*,float*,int*);
+	int *m,*n,i,j;
+	void INPUT(float**,int*,int*),NEXANDIN(int*,int*),INPUTEPS(float*,int*),PERCEPTRON(float**,float*,int*,int*),HEBB(float**,float*,float*,float*,int*,int),CONTROLEX(float*);
+	m=&r;
+	n=&c;
+	NEXANDIN(m,n);											/*Number of example and inputs needed for the NN*/
+    matrix=(float **)malloc(sizeof(float*)*(*m));			/*Input matrix*/
+    sol=(float *)malloc(sizeof(float)*(*m));				/*Correct answers in training procedure*/
+    for(i=0; i<*m; i++){
+        matrix[i]=(float*)malloc(sizeof(float)*(*n));
+	}
+	for(i=0;i<*m;i++){
+		for(j=0;j<*n;j++){
+			matrix[j][i]=1;
+		}
+	}
+	INPUTEPS(sol,m);										/*Reading correct answers from a file*/	
+	INPUT(matrix,m,n);										/*Definition of inputs matrix*/
+	PERCEPTRON(matrix,sol,m,n);								/*Perceptron's algorithm*/
+	free(sol);												/*Dealloc of memory*/
+	free(matrix);
+	return 0;
+}
